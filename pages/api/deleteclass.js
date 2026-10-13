@@ -1,13 +1,13 @@
 import prisma from '../../prisma/prisma';
-import { unstable_getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
 
 export default async function handle(req, res) {
-  //unstable_getServerSession is recommended here: https://next-auth.js.org/configuration/nextjs
-  const session = await unstable_getServerSession(req, res, authOptions);
+  //getServerSession is recommended here: https://next-auth.js.org/configuration/nextjs
+  const session = await getServerSession(req, res, authOptions);
   let user, classroom;
 
-  if (!req.method == 'DELETE') {
+  if (req.method !== 'DELETE') {
     return res.status(405).end();
   }
 
