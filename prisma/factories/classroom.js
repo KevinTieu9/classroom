@@ -1,3 +1,10 @@
+/*
+ * classroom.js
+ * Prisma helper
+ *
+ * Author: Kevin Tieu
+ */
+
 const { PrismaClient } = require('@prisma/client');
 
 // TODO: replace this with the global prisma client

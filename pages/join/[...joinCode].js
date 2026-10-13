@@ -1,3 +1,10 @@
+/*
+ * [...joinCode].js
+ * Classroom page
+ *
+ * Author: Kevin Tieu
+ */
+
 import Head from 'next/head';
 import Navbar from '../../components/navbar';
 import { useState } from 'react';

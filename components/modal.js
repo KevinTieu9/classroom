@@ -1,147 +1,119 @@
+/*
+ * modal.js
+ * Classroom UI — create classroom modal
+ *
+ * Author: Kevin Tieu
+ *
+ * Provides a form for teachers to create a new classroom.
+ */
+
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { MultiSelect } from 'react-multi-select-component';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-//import "./toastContainer.js"
-
-export default function Modal({ userId, certificationNames }) {
-  const handleCancelClick = () => {
-    setModalOn(false);
-  };
-
-  const [formData, setFormData] = useState({});
-  const [selected, setSelected] = useState([]);
-
-  const [modalOn, setModalOn] = useState(false);
+export default function Modal({ user_id, certification_names }) {
   const router = useRouter();
+  const [modal_is_open, set_modal_is_open] = useState(false);
+  const [selected_certifications, set_selected_certifications] = useState([]);
+  const [classroom_name, set_classroom_name] = useState('');
+  const [classroom_description, set_classroom_description] = useState('');
 
-  const clicked = () => {
-    setModalOn(true);
+  const open_modal = () => set_modal_is_open(true);
+  const close_modal = () => set_modal_is_open(false);
+
+  const save_classroom = async event => {
+    event.preventDefault();
+    close_modal();
+
+    const certification_ids = selected_certifications.map(item => item.value).sort();
+
+    const payload = {
+      className: classroom_name,
+      description: classroom_description,
+      classroomTeacherId: user_id,
+      fccCertifications: certification_ids
+    };
+
+    try {
+      const response = await fetch('/api/create_class_teacher', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        toast.success('Classroom created');
+        setTimeout(() => router.reload(), 1500);
+      } else {
+        toast.error('Unable to create classroom');
+      }
+    } catch {
+      toast.error('Unable to create classroom');
+    }
   };
-  async function saveClass(e) {
-    setModalOn(false);
-    e.preventDefault();
-    const fccCertifications = [];
-    selected.map(x => fccCertifications.push(x.value));
-    fccCertifications.sort();
-    formData.fccCertifications = fccCertifications;
 
-    const response = await fetch(`/api/create_class_teacher`, {
-      method: 'POST',
-      body: JSON.stringify(formData)
-    });
-
-    setTimeout(function(){
-      router.reload();
-   }, 5000);
-
-    toast.success('Successfully Created Class!');
-
-    return await response.json();
-  }
+  const certification_options = (certification_names || []).map(name => ({
+    label: name,
+    value: name
+  }));
 
   return (
     <>
-      <div>
-        <div className='flex justify-center'>
-          <div
-            className='flex cursor-pointer justify-center p-4 m-6 rounded-md hover:bg-[#f1be32] shadedow-lg border-solid border-color: inherit; border-2 pl-4 pr-4 bg-[#feac32] text-black'
-            onClick={clicked}
-          >
-            Create Class
+      <div className='flex justify-center'>
+        <button
+          type='button'
+          className='p-4 m-6 rounded-md hover:bg-[#f1be32] border-2 bg-[#feac32] text-black'
+          onClick={open_modal}
+        >
+          Create Class
+        </button>
+      </div>
+
+      {modal_is_open && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
+          <div className='bg-[#0a0a23] py-12 px-24 border-4 border-sky-500 rounded-xl text-white'>
+            <h2 className='text-lg mb-4 text-center'>Create Class</h2>
+            <form onSubmit={save_classroom} className='space-y-4'>
+              <div>
+                <label htmlFor='classroom-name'>Class Name</label>
+                <input
+                  id='classroom-name'
+                  required
+                  value={classroom_name}
+                  onChange={event => set_classroom_name(event.target.value)}
+                  className='block w-full text-black'
+                />
+              </div>
+              <div>
+                <label htmlFor='classroom-description'>Description</label>
+                <textarea
+                  id='classroom-description'
+                  value={classroom_description}
+                  onChange={event => set_classroom_description(event.target.value)}
+                  className='block w-full text-black'
+                />
+              </div>
+              <div>
+                <label>Certifications</label>
+                <MultiSelect
+                  options={certification_options}
+                  value={selected_certifications}
+                  onChange={set_selected_certifications}
+                  labelledBy='Select certifications'
+                />
+              </div>
+              <div className='flex justify-end gap-2'>
+                <button type='button' onClick={close_modal}>
+                  Cancel
+                </button>
+                <button type='submit'>Save</button>
+              </div>
+            </form>
           </div>
         </div>
-        {modalOn && (
-          <>
-            <div className='bg-zinc-200 opacity-100 fixed inset-0 z-50'>
-              <div className='flex h-screen justify-center items-center'>
-                <div className='flex-col justify-center bg-[#0a0a23] py-12 px-24 border-4 border-sky-500 rounded-xl '>
-                  <div className='flex text-lg text-white justify-center items-center'>
-                    Create Class
-                  </div>
-
-                  <form className='mt-8 space-y-6' onSubmit={saveClass}>
-                    <input type='hidden' name='remember' value='true'></input>
-                    <div className='rounded-md shadow-sm -space-y-px'>
-                      <div>
-                        <h1 className='text-white'>Class Name:</h1>
-                        <label htmlFor='class-name' className='sr-only'>
-                          Class Name
-                        </label>
-                        <input
-                          onChange={e =>
-                            setFormData({
-                              ...formData,
-                              className: e.target.value,
-                              classroomTeacherId: userId
-                            })
-                          }
-                          id='class-name'
-                          name='classname'
-                          required
-                          className='appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm'
-                          placeholder='Class Name'
-                        ></input>
-                      </div>
-                    </div>
-                    <div className='rounded-md shadow-sm -space-y-px'>
-                      <div>
-                        <h1 className='text-white'>Description:</h1>
-                        <label htmlFor='description-text' className='sr-only'>
-                          Description
-                        </label>
-                        <textarea
-                          onChange={e =>
-                            setFormData({
-                              ...formData,
-                              description: e.target.value
-                            })
-                          }
-                          id='description-text'
-                          name='description'
-                          required
-                          className='appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm'
-                          placeholder='Description'
-                        ></textarea>
-                      </div>
-                    </div>
-                    <div className='rounded-md shadow-sm -space-y-px w-60 lg:w-72 2xl:w-96'>
-                      <div>
-                        <h1 className='text-white'>Select Certifications:</h1>
-                        <MultiSelect
-                          hidePlaceholder={false}
-                          options={certificationNames}
-                          value={selected}
-                          onChange={setSelected}
-                          labelledBy='Select'
-                        />
-                      </div>
-                    </div>
-
-                    <div className='flex items-center justify-between'></div>
-                    <div className='flex items-center justify-center'>
-                      <button
-                        type='submit'
-                        className=' rounded px-4 py-2 text-white bg-green-700'
-                      >
-                        Create
-                      </button>
-                      <button
-                        onClick={handleCancelClick}
-                        className='rounded px-5 py-2 ml-10 text-white bg-[#e3342f]'
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+      )}
     </>
   );
 }

@@ -1,46 +1,67 @@
+/*
+ * student_email_join.js
+ * Classroom API — student joins a classroom by code
+ *
+ * Author: Kevin Tieu
+ *
+ * Adds the authenticated user to a classroom if they are not already a member.
+ */
+
 import prisma from '../../prisma/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
 
-export default async function handle(req, res) {
-  // getServerSession is recommended here: https://next-auth.js.org/configuration/nextjs
-  const session = await getServerSession(req, res, authOptions);
+export default async function handle(request, response) {
+  const session = await getServerSession(request, response, authOptions);
 
-  if (req.method !== 'PUT') {
-    res.status(405).end();
+  if (request.method !== 'PUT') {
+    return response.status(405).end();
   }
 
   if (!session) {
-    res.status(403).end();
+    return response.status(403).end();
   }
 
-  const body = req.body;
-  // Grab user info here
-  const userInfo = await prisma.user.findUnique({
+  const request_data = request.body;
+  const join_code = request_data.join && request_data.join[0];
+
+  if (!join_code) {
+    return response.status(400).end();
+  }
+
+  const current_user = await prisma.user.findUnique({
     where: {
       email: session.user.email
     },
     select: {
-      id: true
+      id: true,
+      role: true
     }
   });
-  // Grab class info here
-  const checkClass = await prisma.classroom.findUniqueOrThrow({
+
+  if (!current_user) {
+    return response.status(403).end();
+  }
+
+  const classroom_record = await prisma.classroom.findUnique({
     where: {
-      classroomId: body.join[0]
+      classroomId: join_code
     },
     select: {
       fccUserIds: true
     }
   });
-  const existsInClassroom = checkClass.fccUserIds.includes(userInfo.id);
-  if (existsInClassroom) {
-    res.status(409).end();
+
+  if (!classroom_record) {
+    return response.status(404).end();
   }
-  // TODO: Once we allow multiple teachers inside of a classroom, make sure that the teachers
-  // are placed inside of the teacher array rather than as a regular student
-  else if (userInfo.role === 'NONE') {
-    // This runs only when a new user attempts to join a classroom.
+
+  const already_member = classroom_record.fccUserIds.includes(current_user.id);
+  if (already_member) {
+    return response.status(409).end();
+  }
+
+  if (current_user.role === 'NONE') {
     await prisma.user.update({
       where: {
         email: session.user.email
@@ -50,14 +71,15 @@ export default async function handle(req, res) {
       }
     });
   }
-  // Update calssroom with user id
+
   await prisma.classroom.update({
     where: {
-      classroomId: body.join[0]
+      classroomId: join_code
     },
     data: {
-      fccUserIds: { push: userInfo.id }
+      fccUserIds: { push: current_user.id }
     }
   });
-  res.status(200).end();
+
+  return response.status(200).end();
 }

@@ -1,48 +1,55 @@
+/*
+ * dashtable.js
+ * Classroom UI — student progress table
+ *
+ * Author: Kevin Tieu
+ *
+ * Builds rows of student progress against selected certifications.
+ */
+
 import DataTable from 'react-data-table-component';
 
-//from MDN docs
-function intersection(setA, setB) {
-  let _intersection = new Set();
-  for (let elem of setB) {
-    if (setA.has(elem)) {
-      _intersection.add(elem);
+function compute_intersection_size(challenge_set, completed_set) {
+  let shared_count = 0;
+  for (const challenge_id of challenge_set) {
+    if (completed_set.has(challenge_id)) {
+      shared_count += 1;
     }
   }
-  return _intersection;
+  return shared_count;
 }
 
-export default function DashTable(props) {
-  let output = Object.entries(props.columns).map(([i]) => {
-    if (props.data[i] != null) {
-      let studentName = Object.keys(props.data[Number(i)])[0];
-      let userOutput = {};
-      userOutput['id'] = Number(i) + 1;
-      // This loops through all out columns and populates the data accordingly. Because we are looping through the columns, we will have 'props.columns.length' objects inside of values, but we will filter them out later.
-      let values = props.columns.map(x => {
-        if (x.selector !== 'student-name') {
-          let intersectionSize = intersection(
-            new Set(x.allChallenges),
-            new Set(props.data[i][studentName])
-          ).size;
-          userOutput[
-            x.selector
-          ] = `${intersectionSize}/${x.allChallenges.length}`;
-        } else {
-          userOutput[x.selector] = studentName;
-        }
-        // This returns our user object when it is completed, otherwise we return undefined to our values array (which we will filter out later)
-        if (Object.keys(userOutput).length == props.columns.length) {
-          return userOutput;
-        }
-      });
-      // Filters out undefined parts of values
-      values = values.filter(obj => typeof obj == 'object');
-      return values;
+export default function DashTable({ column_definitions, student_progress }) {
+  if (!student_progress || !column_definitions) {
+    return <p>No progress data available.</p>;
+  }
+
+  const table_rows = [];
+
+  Object.entries(student_progress).forEach(([row_index, progress_entry]) => {
+    if (!progress_entry) {
+      return;
     }
+
+    const student_name = Object.keys(progress_entry)[0];
+    const completed_challenges = new Set(progress_entry[student_name] || []);
+
+    const row_record = {
+      id: Number(row_index) + 1,
+      'student-name': student_name
+    };
+
+    column_definitions.forEach(column_definition => {
+      if (column_definition.selector === 'student-name') {
+        return;
+      }
+      const challenge_set = new Set(column_definition.allChallenges || []);
+      const completed_count = compute_intersection_size(challenge_set, completed_challenges);
+      row_record[column_definition.selector] = `${completed_count}/${challenge_set.size}`;
+    });
+
+    table_rows.push(row_record);
   });
-  // Filters out any possible undefined objs
-  output = output.filter(obj => typeof obj == 'object');
-  //turns our output array to a 1D array instead of 2D
-  output = output.flat(1);
-  return <DataTable columns={props.columns} data={output} pagination />;
+
+  return <DataTable columns={column_definitions} data={table_rows} pagination />;
 }

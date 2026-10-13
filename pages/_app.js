@@ -1,3 +1,10 @@
+/*
+ * _app.js
+ * Classroom page
+ *
+ * Author: Kevin Tieu
+ */
+
 import '../styles/globals.css';
 import { SessionProvider } from 'next-auth/react';
 

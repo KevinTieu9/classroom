@@ -1,22 +1,31 @@
+/*
+ * deleteclass.js
+ * Classroom API — delete a classroom
+ *
+ * Author: Kevin Tieu
+ *
+ * Removes a classroom record if the requester is the owning teacher or an admin.
+ */
+
 import prisma from '../../prisma/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
 
-export default async function handle(req, res) {
-  //getServerSession is recommended here: https://next-auth.js.org/configuration/nextjs
-  const session = await getServerSession(req, res, authOptions);
-  let user, classroom;
+export default async function handle(request, response) {
+  const session = await getServerSession(request, response, authOptions);
+  let current_user;
+  let classroom_record;
 
-  if (req.method !== 'DELETE') {
-    return res.status(405).end();
+  if (request.method !== 'DELETE') {
+    return response.status(405).end();
   }
 
   if (!session) {
-    return res.status(403).end();
+    return response.status(403).end();
   }
 
   try {
-    user = await prisma.user.findUniqueOrThrow({
+    current_user = await prisma.user.findUniqueOrThrow({
       where: {
         email: session.user.email
       },
@@ -26,36 +35,34 @@ export default async function handle(req, res) {
       }
     });
   } catch {
-    return res.status(403).end();
+    return response.status(403).end();
   }
 
-  //checks whether user is teacher/admin
-  if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
-    return res.status(403).end();
+  if (current_user.role !== 'TEACHER' && current_user.role !== 'ADMIN') {
+    return response.status(403).end();
   }
 
-  const data = req.body;
+  const request_data = JSON.parse(request.body);
 
   try {
-    classroom = await prisma.classroom.findUniqueOrThrow({
+    classroom_record = await prisma.classroom.findUniqueOrThrow({
       where: {
-        classroomId: data
+        classroomId: request_data['classroomId']
       }
     });
   } catch {
-    return res.status(400).end();
+    return response.status(404).end();
   }
 
-  //makes sure teacher can only delete their own class
-  if (user.role === 'TEACHER' && user.id !== classroom.classroomTeacherId) {
-    return res.status(403).end();
+  if (current_user.role === 'TEACHER' && classroom_record.classroomTeacherId !== current_user.id) {
+    return response.status(403).end();
   }
 
   await prisma.classroom.delete({
     where: {
-      classroomId: data
+      classroomId: request_data['classroomId']
     }
   });
 
-  return res.status(200).end();
+  return response.status(200).end();
 }

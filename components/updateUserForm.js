@@ -1,101 +1,68 @@
+/*
+ * updateUserForm.js
+ * Classroom UI — administrator form to edit a user
+ *
+ * Author: Kevin Tieu
+ *
+ * Submits name, email, and role changes for a selected user.
+ */
+
 import { useRouter } from 'next/router';
 
-export default function UpdateUserForm(props) {
+export default function UpdateUserForm({ user_info }) {
   const router = useRouter();
-  const handleSubmit = async event => {
+
+  const handle_submit = async event => {
     event.preventDefault();
 
-    const data = {
-      id: props.userInfo.id,
+    const form_values = {
+      id: user_info.id,
       name: event.target.name.value,
       email: event.target.email.value,
       role: event.target.role.value
     };
-    const JSONdata = JSON.stringify(data);
 
-    const endpoint = `/api/modifyuser/`;
+    try {
+      const response = await fetch('/api/modifyuser', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form_values)
+      });
 
-    const options = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSONdata
-    };
-
-    const res = await fetch(endpoint, options);
-    console.log(res);
-    router.push('/admin');
+      if (response.ok) {
+        router.push('/admin');
+      } else {
+        console.error('Update failed', response.status);
+      }
+    } catch (error) {
+      console.error('Update request failed', error);
+    }
   };
-  const currRole = props.userInfo.role;
-  let roles = ['ADMIN', 'STUDENT', 'TEACHER', 'NONE'];
-  const x = roles.indexOf(currRole);
-  const temp = roles[x];
-  roles[x] = roles[0];
-  roles[0] = temp;
+
+  const available_roles = ['ADMIN', 'STUDENT', 'TEACHER', 'NONE'];
+  const current_role = user_info.role || 'NONE';
 
   return (
-    <div className='flex flex-col items-center justify-center'>
-      <p className='my-4'>
-        You are currently editing: {props.userInfo.name} ({props.userInfo.email}
-        )
-      </p>
-      <form
-        onSubmit={handleSubmit}
-        className='bg-slate-200 p-8 rounded border border-black'
-      >
-        {/* pass teacher ID to API but hide it from user */}
-        <input
-          type='text'
-          name='id'
-          value={props.userInfo.id}
-          className='hidden'
-          readOnly
-        ></input>
-
-        <div className='flex flex-wrap -mx-3 mb-6'>
-          <div className='w-full md:w-1/2 px-3 mb-6 md:mb-0'>
-            <label htmlFor='name'>Name:</label>
-            <input
-              type='text'
-              id='name'
-              name='name'
-              className='bg-slate-200'
-              placeholder={props.userInfo.name}
-            />
-          </div>
-        </div>
-        <div className='flex flex-wrap -mx-3 mb-6'>
-          <div className='w-full md:w-1/2 px-3 mb-6 md:mb-0'>
-            <label htmlFor='email'>Email:</label>
-            <input
-              type='email'
-              id='email'
-              name='email'
-              className='bg-slate-200'
-              placeholder={props.userInfo.email}
-            />
-          </div>
-        </div>
-        <div className='flex flex-wrap -mx-3 mb-6'>
-          <div className='w-full md:w-1/2 px-3 mb-6 md:mb-0'>
-            <label htmlFor='name'>Role:</label>
-            <select id='role' name='role'>
-              {roles.map(role => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <button
-          className='text-white flex-shrink-0 border-transparent border-4 bg-[#0a0a23] hover:text-gray-200 text-sm py-1 px-2 rounded'
-          type='submit'
-        >
-          Submit
-        </button>
-      </form>
-    </div>
+    <form onSubmit={handle_submit}>
+      <label>
+        Name
+        <input name='name' defaultValue={user_info.name || ''} />
+      </label>
+      <label>
+        Email
+        <input name='email' defaultValue={user_info.email || ''} />
+      </label>
+      <label>
+        Role
+        <select name='role' defaultValue={current_role}>
+          {available_roles.map(role_name => (
+            <option key={role_name} value={role_name}>
+              {role_name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button type='submit'>Save changes</button>
+    </form>
   );
 }

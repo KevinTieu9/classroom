@@ -1,3 +1,10 @@
+/*
+ * seed.js
+ * Prisma helper
+ *
+ * Author: Kevin Tieu
+ */
+
 const { createClassrooms } = require('./factories/classroom');
 const { createUsers } = require('./factories/user');
 

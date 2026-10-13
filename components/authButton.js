@@ -1,27 +1,33 @@
+/*
+ * authButton.js
+ * Classroom UI — authentication control
+ *
+ * Author: Kevin Tieu
+ *
+ * Shows sign-in or sign-out based on the current session.
+ */
+
 import { useSession, signIn, signOut } from 'next-auth/react';
 
 export default function AuthButton() {
-  const { data: session } = useSession();
-  if (session) {
+  const { data: session_data } = useSession();
+
+  if (session_data) {
     return (
-      <>
-        <button
-          onClick={() => signOut()}
-          className='hover:bg-[#ffbf00] shadedow-lg border-solid border-color: inherit; border-[1px] pl-4 pr-4 bg-[#f1be32] text-black'
-        >
-          Sign out
-        </button>
-      </>
+      <button
+        className='bg-white text-black px-2 py-1 rounded text-sm'
+        onClick={() => signOut()}
+      >
+        Sign out
+      </button>
     );
   }
   return (
-    <>
-      <button
-        onClick={() => signIn(null)}
-        className='hover:bg-[#ffbf00] shadedow-lg border-solid border-color: inherit; border-[1px] pl-4 pr-4 bg-[#f1be32] text-black'
-      >
-        Sign in
-      </button>
-    </>
+    <button
+      className='bg-white text-black px-2 py-1 rounded text-sm'
+      onClick={() => signIn()}
+    >
+      Sign in
+    </button>
   );
 }

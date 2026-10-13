@@ -1,3 +1,10 @@
+/*
+ * _document.js
+ * Classroom page
+ *
+ * Author: Kevin Tieu
+ */
+
 import Document, { Html, Head, Main, NextScript } from 'next/document';
 
 class MyDocument extends Document {

@@ -1,3 +1,10 @@
+/*
+ * index.js
+ * Classroom page
+ *
+ * Author: Kevin Tieu
+ */
+
 import Layout from '../../components/layout';
 import Head from 'next/head';
 import Navbar from '../../components/navbar';

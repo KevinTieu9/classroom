@@ -1,3 +1,10 @@
+/*
+ * error.js
+ * Classroom page
+ *
+ * Author: Kevin Tieu
+ */
+
 import Navbar from '../components/navbar';
 export default function error() {
   return (

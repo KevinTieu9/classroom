@@ -1,3 +1,10 @@
+/*
+ * [id].js
+ * Classroom page
+ *
+ * Author: Kevin Tieu
+ */
+
 import { getSession } from 'next-auth/react';
 import Navbar from '../../../components/navbar';
 import UpdateUserForm from '../../../components/updateUserForm';

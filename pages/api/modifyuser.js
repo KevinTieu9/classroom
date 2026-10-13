@@ -1,63 +1,66 @@
+/*
+ * modifyuser.js
+ * Classroom API — update user details (admin only)
+ *
+ * Author: Kevin Tieu
+ *
+ * Allows an administrator to change a user's name, email, or role.
+ */
+
 import prisma from '../../prisma/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
 
-export default async function handle(req, res) {
-  //getServerSession is recommended here: https://next-auth.js.org/configuration/nextjs
-  const session = await getServerSession(req, res, authOptions);
-  let user;
+export default async function handle(request, response) {
+  const session = await getServerSession(request, response, authOptions);
 
-  if (req.method !== 'POST') {
-    return res.status(405).end();
+  if (request.method !== 'POST') {
+    return response.status(405).end();
   }
 
   if (!session) {
-    return res.status(403).end();
+    return response.status(403).end();
   }
 
-  try {
-    user = await prisma.user.findUniqueOrThrow({
-      where: {
-        email: session.user.email
-      },
-      select: {
-        role: true
-      }
-    });
-  } catch {
-    return res.status(403).end();
-  }
-
-  //checks whether user is admin
-  if (user.role !== 'ADMIN') {
-    return res.status(403).end();
-  }
-
-  const body = req.body;
-
-  if (body.name.length === 0) {
-    body.name = undefined;
-  }
-
-  if (body.email.length === 0) {
-    body.email = undefined;
-  }
-
-  if (body.role.length === 0) {
-    body.role = undefined;
-  }
-
-  //if any parameter is undefined/null then prisma will not change it
-  await prisma.user.update({
+  const current_user = await prisma.user.findUnique({
     where: {
-      id: body.id
+      email: session.user.email
     },
-    data: {
-      name: body.name,
-      email: body.email,
-      role: body.role
+    select: {
+      role: true
     }
   });
 
-  return res.status(200).end();
+  if (!current_user || current_user.role !== 'ADMIN') {
+    return response.status(403).end();
+  }
+
+  const request_data = request.body;
+  const target_user_id = request_data.id;
+
+  if (!target_user_id) {
+    return response.status(400).end();
+  }
+
+  const update_payload = {};
+  if (request_data.name && request_data.name.length > 0) {
+    update_payload.name = request_data.name;
+  }
+  if (request_data.email && request_data.email.length > 0) {
+    update_payload.email = request_data.email;
+  }
+  if (request_data.role && request_data.role.length > 0) {
+    update_payload.role = request_data.role;
+  }
+
+  if (Object.keys(update_payload).length === 0) {
+    return response.status(304).end();
+  }
+
+  await prisma.user.update({
+    where: { id: target_user_id },
+    data: update_payload
+  });
+
+  return response.status(200).end();
 }

@@ -1,13 +1,16 @@
-import Navbar from './navbar';
-export default function ErrorComponent(props) {
-  return (
-    <>
-      <Navbar></Navbar>
+/*
+ * error.js
+ * Classroom UI — simple error message
+ *
+ * Author: Kevin Tieu
+ *
+ * Displays a generic error notice.
+ */
 
-      <h1 className='text-[40px] text-center big-heading underline'>
-        {props.errorCause}
-      </h1>
-      <p className='text-center'>{props.errorMessage}</p>
-    </>
+export default function ErrorMessage({ message_text }) {
+  return (
+    <div className='p-4 text-red-700'>
+      {message_text || 'An unexpected error occurred.'}
+    </div>
   );
 }

@@ -1,22 +1,30 @@
+/*
+ * create_class_teacher.js
+ * Classroom API — create a classroom as a teacher
+ *
+ * Author: Kevin Tieu
+ *
+ * Creates a new classroom record for the authenticated teacher or admin.
+ */
+
 import prisma from '../../prisma/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from './auth/[...nextauth]';
 
-export default async function handle(req, res) {
-  //getServerSession is recommended here: https://next-auth.js.org/configuration/nextjs
-  const session = await getServerSession(req, res, authOptions);
-  let user;
+export default async function handle(request, response) {
+  const session = await getServerSession(request, response, authOptions);
+  let current_user;
 
-  if (req.method !== 'POST') {
-    return res.status(405).end();
+  if (request.method !== 'POST') {
+    return response.status(405).end();
   }
 
   if (!session) {
-    return res.status(403).end();
+    return response.status(403).end();
   }
 
   try {
-    user = await prisma.user.findUniqueOrThrow({
+    current_user = await prisma.user.findUniqueOrThrow({
       where: {
         email: session.user.email
       },
@@ -26,29 +34,29 @@ export default async function handle(req, res) {
       }
     });
   } catch {
-    return res.status(403).end();
+    return response.status(403).end();
   }
 
-  //checks whether user is teacher/admin
-  if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
-    return res.status(403).end();
+  // Teacher or admin only
+  if (current_user.role !== 'TEACHER' && current_user.role !== 'ADMIN') {
+    return response.status(403).end();
   }
 
-  const data = JSON.parse(req.body);
+  const request_data = JSON.parse(request.body);
 
-  //makes sure teacher is only creating class for themselves
-  if (user.role === 'TEACHER' && user.id !== data['classroomTeacherId']) {
-    return res.status(403).end();
+  // Teachers may only create classrooms for themselves
+  if (current_user.role === 'TEACHER' && current_user.id !== request_data['classroomTeacherId']) {
+    return response.status(403).end();
   }
 
-  const createClassInDB = await prisma.classroom.create({
+  const created_classroom = await prisma.classroom.create({
     data: {
-      classroomName: data['className'],
-      description: data['description'],
-      classroomTeacherId: data['classroomTeacherId'],
-      fccCertifications: data['fccCertifications']
+      classroomName: request_data['className'],
+      description: request_data['description'],
+      classroomTeacherId: request_data['classroomTeacherId'],
+      fccCertifications: request_data['fccCertifications']
     }
   });
 
-  return res.json(createClassInDB);
+  return response.status(200).json(created_classroom);
 }

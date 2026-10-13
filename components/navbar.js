@@ -1,3 +1,12 @@
+/*
+ * navbar.js
+ * Classroom UI — top navigation bar
+ *
+ * Author: Kevin Tieu
+ *
+ * Renders the site header with logo and authentication controls.
+ */
+
 import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
@@ -23,9 +32,9 @@ export default function Navbar({ children }) {
         </Link>
         <div className='flex-1 inline-flex justify-end'>
           {React.Children.toArray(children).length > 1 ? (
-            children.map(children => (
-              <div className='pl-2 hidden md:block' key={children}>
-                <p>{children}</p>
+            children.map(child_element => (
+              <div className='pl-2 hidden md:block' key={child_element}>
+                <p>{child_element}</p>
               </div>
             ))
           ) : (
